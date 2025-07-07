@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos Interactivos con Canvas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4e54c8;
+            --secondary-color: #8f94fb;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --transition-time: 0.4s;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow-x: hidden;
+            background-color: var(--light-color);
+            color: #333;
+            transition: background-color var(--transition-time);
+        }
+        
+        /* Animación de fondo gradiente */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .gradient-header {
+            background: linear-gradient(-45deg, #4e54c8, #8f94fb, #4e54c8, #8f94fb);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: white;
+        }
+        
+        /* Animación título principal */
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+            50% { text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(78, 84, 200, 0.6); }
+        }
+        
+        .main-title {
+            animation: titleGlow 3s ease-in-out infinite;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        /* Tarjetas con efecto 3D al hacer hover */
+        .card-hover-3d {
+            transition: all 0.3s ease;
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .card-hover-3d:hover {
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg) scale(1.03);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Animación de entrada para secciones */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-section {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        
+        /* Botón flotante mejorado */
+        .btn-float {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            z-index: 1;
+        }
+        
+        .btn-float::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            z-index: -1;
+            transition: all 0.3s;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        
+        .btn-float:hover::before {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .btn-float:hover {
+            color: white;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Canvas container */
+        .canvas-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+        
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+        }
+        
+        /* Dark mode styles */
+        body[data-bs-theme="dark"] {
+            background-color: var(--dark-color);
+            color: #eee;
+        }
+        
+        body[data-bs-theme="dark"] .card {
+            background-color: #16213e;
+            color: #eee;
+        }
+        
+        body[data-bs-theme="dark"] .canvas-container {
+            background: #16213e;
+        }
+        
+        /* Progress bar animation */
+        @keyframes progressAnimation {
+            from { width: 0%; }
+            to { width: var(--progress-value); }
+        }
+        
+        .progress-bar-animated {
+            animation: progressAnimation 1.5s ease-out forwards;
+        }
+        
+        /* Estilos para la simulación */
+        .simulation-controls {
+            background-color: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .control-label {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .control-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark gradient-header sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fas fa-chart-line me-2"></i>
+                <span class="fw-bold">GraphSim</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#inicio">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#graficos">Gráficos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contacto">Contacto</a>
+                    </li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+                        <button class="btn btn-sm btn-outline-light" id="themeToggle">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <header class="gradient-header py-5" id="inicio">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-6 animate-section">
+                    <h1 class="display-4 main-title mb-4">Simulación de <span class="text-warning">Gráficos</span></h1>
+                    <p class="lead mb-4">Explora y crea visualizaciones de datos interactivas con nuestra herramienta basada en Canvas.</p>
+                    <div class="d-flex gap-3">
+                        <a href="#graficos" class="btn btn-light btn-lg btn-float px-4">
+                            <i class="fas fa-play me-2"></i>Comenzar
+                        </a>
+                        <a href="#contacto" class="btn btn-outline-light btn-lg btn-float px-4">
+                            <i class="fas fa-info-circle me-2"></i>Aprender más
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0 animate-section delay-1">
+                    <div class="canvas-container p-2">
+                        <canvas id="heroCanvas" width="600" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="py-5 bg-light" id="graficos">
+        <div class="container py-5">
+            <div class="text-center mb-5 animate-section">
+                <h2 class="display-5 fw-bold mb-3">Simulador <span class="text-primary">Interactivo</span></h2>
+                <p class="lead text-muted">Controla los parámetros y observa los cambios en tiempo real</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-8 animate-section delay-1">
+                    <div class="canvas-container p-3">
+                        <canvas id="chartCanvas" width="800" height="500"></canvas>
+                    </div>
+                    
+                    <div class="simulation-controls animate-section delay-2">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="control-label">Tipo de gráfico:</label>
+                                <select class="form-select" id="chartType">
+                                    <option value="bar">Barras</option>
+                                    <option value="line">Líneas</option>
+                                    <option value="pie">Circular</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="control-label">Patrón de datos:</label>
+                                <select class="form-select" id="dataPattern">
+                                    <option value="random">Aleatorio</option>
+                                    <option value="ascendente">Ascendente</option>
+                                    <option value="descendente">Descendente</option>
+                                    <option value="sinusoidal">Sinusoidal</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="control-label">Número de puntos: <span id="pointsValue" class="control-value">12</span></label>
+                                <input type="range" class="form-range" id="dataPoints" min="5" max="24" value="12">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="control-label">Nivel de ruido: <span id="noiseValue" class="control-value">30</span>%</label>
+                                <input type="range" class="form-range" id="noiseLevel" min="0" max="100" value="30">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="control-label">Velocidad animación: <span id="speedValue" class="control-value">1</span>x</label>
+                                <input type="range" class="form-range" id="animationSpeed" min="0.5" max="3" step="0.5" value="1">
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button id="randomizeBtn" class="btn btn-outline-primary me-md-2">
+                                <i class="fas fa-random me-2"></i>Aleatorizar
+                            </button>
+                            <button id="updateChart" class="btn btn-primary">
+                                <i class="fas fa-sync-alt me-2"></i>Actualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 animate-section delay-2">
+                    <div class="card h-100 card-hover-3d">
+                        <div class="card-body p-4">
+                            <h3 class="h4 mb-3">Cómo usar el simulador</h3>
+                            <p class="text-muted mb-4">Experimenta con diferentes configuraciones:</p>
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-sliders-h text-primary me-2"></i>
+                                    <strong>Ajusta los controles</strong> para cambiar la visualización
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-chart-bar text-primary me-2"></i>
+                                    <strong>Selecciona</strong> entre diferentes tipos de gráficos
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-wave-square text-primary me-2"></i>
+                                    <strong>Modifica</strong> los patrones de datos y nivel de ruido
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-tachometer-alt text-primary me-2"></i>
+                                    <strong>Controla</strong> la velocidad de animación
+                                </li>
+                            </ul>
+                            <hr>
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Haz clic en "Aleatorizar" para generar datos al azar.
+                            </div>
+                            <div class="mt-3">
+                                <h5 class="h6">Datos actuales:</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Punto</th>
+                                                <th>Valor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dataTable">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section class="py-5" id="info">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-lg-6 animate-section">
+                    <div class="card h-100 card-hover-3d">
+                        <div class="card-body p-4">
+                            <h3 class="h4 mb-3"><i class="fas fa-chart-pie text-primary me-2"></i> Visualización de Datos</h3>
+                            <p class="text-muted">Nuestro simulador te permite explorar diferentes formas de representar datos visualmente. Experimenta con:</p>
+                            <ul class="text-muted">
+                                <li class="mb-2">Gráficos de barras para comparaciones</li>
+                                <li class="mb-2">Gráficos de líneas para tendencias</li>
+                                <li class="mb-2">Gráficos circulares para proporciones</li>
+                                <li>Diferentes patrones de datos y variabilidad</li>
+                            </ul>
+                            <div class="progress mt-4" style="height: 8px;">
+                                <div class="progress-bar bg-primary progress-bar-animated" style="--progress-value: 85%;" role="progressbar"></div>
+                            </div>
+                            <small class="text-muted">Capacidad de representación: 85%</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 animate-section delay-1">
+                    <div class="card h-100 card-hover-3d">
+                        <div class="card-body p-4">
+                            <h3 class="h4 mb-3"><i class="fas fa-laptop-code text-primary me-2"></i> Tecnologías Utilizadas</h3>
+                            <p class="text-muted">Esta demostración utiliza las siguientes tecnologías web modernas:</p>
+                            <div class="row text-center">
+                                <div class="col-4 mb-3">
+                                    <div class="p-3 bg-primary bg-opacity-10 rounded">
+                                        <i class="fab fa-html5 fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-0">HTML5 Canvas</h6>
+                                    </div>
+                                </div>
+                                <div class="col-4 mb-3">
+                                    <div class="p-3 bg-success bg-opacity-10 rounded">
+                                        <i class="fab fa-css3-alt fa-2x text-success mb-2"></i>
+                                        <h6 class="mb-0">CSS3</h6>
+                                    </div>
+                                </div>
+                                <div class="col-4 mb-3">
+                                    <div class="p-3 bg-warning bg-opacity-10 rounded">
+                                        <i class="fab fa-js fa-2x text-warning mb-2"></i>
+                                        <h6 class="mb-0">JavaScript</h6>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="p-3 bg-info bg-opacity-10 rounded">
+                                        <i class="fab fa-bootstrap fa-2x text-info mb-2"></i>
+                                        <h6 class="mb-0">Bootstrap 5</h6>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="p-3 bg-danger bg-opacity-10 rounded">
+                                        <i class="fab fa-font-awesome fa-2x text-danger mb-2"></i>
+                                        <h6 class="mb-0">Font Awesome</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light" id="contacto">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center animate-section">
+                    <h2 class="display-5 fw-bold mb-4">¿Preguntas o Comentarios?</h2>
+                    <p class="lead mb-5">Contáctanos para más información sobre visualización de datos interactiva.</p>
+                    
+                    <div class="card card-hover-3d animate-section delay-1">
+                        <div class="card-body p-5">
+                            <form id="contactForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="name" placeholder="Nombre" required>
+                                            <label for="name">Nombre</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="email" class="form-control" id="email" placeholder="Email" required>
+                                            <label for="email">Email</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="subject" placeholder="Asunto" required>
+                                            <label for="subject">Asunto</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-floating">
+                                            <textarea class="form-control" id="message" placeholder="Mensaje" style="height: 150px" required></textarea>
+                                            <label for="message">Mensaje</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary btn-lg btn-float px-5">
+                                            <i class="fas fa-paper-plane me-2"></i>Enviar Mensaje
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="gradient-header text-white py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-chart-line me-2"></i>GraphSim
+                    </h3>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="social-icons">
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-github"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-codepen"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 opacity-25">
+            <div class="text-center small">
+                <p class="mb-0">© 2025 GraphSim. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const animateSections = document.querySelectorAll('.animate-section');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationPlayState = 'running';
+                        entry.target.style.opacity = '1';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            animateSections.forEach(section => {
+                observer.observe(section);
+            });
+            
+
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+            
+            themeToggle.addEventListener('click', () => {
+                if (html.getAttribute('data-bs-theme') === 'dark') {
+                    html.setAttribute('data-bs-theme', 'light');
+                    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                } else {
+                    html.setAttribute('data-bs-theme', 'dark');
+                    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+
+                drawChart();
+            });
+            
+
+            const heroCanvas = document.getElementById('heroCanvas');
+            const heroCtx = heroCanvas.getContext('2d');
+            
+            function resizeHeroCanvas() {
+                heroCanvas.width = heroCanvas.offsetWidth;
+                heroCanvas.height = heroCanvas.offsetHeight;
+            }
+            
+            window.addEventListener('resize', resizeHeroCanvas);
+            resizeHeroCanvas();
+            
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                    this.y = Math.random() * heroCanvas.height;
+                }
+                
+                reset() {
+                    this.x = Math.random() * heroCanvas.width;
+                    this.y = -20;
+                    this.size = Math.random() * 4 + 1;
+                    this.speed = Math.random() * 2 + 1;
+                    this.opacity = Math.random() * 0.6 + 0.2;
+                    this.color = `rgba(78, 84, 200, ${this.opacity})`;
+                }
+                
+                update() {
+                    this.y += this.speed;
+                    if (this.y > heroCanvas.height) {
+                        this.reset();
+                    }
+                }
+                
+                draw() {
+                    heroCtx.fillStyle = this.color;
+                    heroCtx.beginPath();
+                    heroCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    heroCtx.fill();
+                }
+            }
+            
+            const particles = [];
+            const particleCount = Math.floor(heroCanvas.width / 10);
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+            
+            function animateHero() {
+                heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+                
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                
+                requestAnimationFrame(animateHero);
+            }
+            
+            animateHero();
+            
+
+            const chartCanvas = document.getElementById('chartCanvas');
+            const chartCtx = chartCanvas.getContext('2d');
+            let currentChartType = 'bar';
+            let animationSpeed = 1;
+            let animationFrameId = null;
+            
+
+            let chartData = {
+                labels: [],
+                values: [],
+                colors: [
+                    'rgba(78, 84, 200, 0.7)',
+                    'rgba(143, 148, 251, 0.7)',
+                    'rgba(100, 200, 150, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(201, 203, 207, 0.7)'
+                ]
+            };
+            
+
+            const chartType = document.getElementById('chartType');
+            const dataPattern = document.getElementById('dataPattern');
+            const dataPoints = document.getElementById('dataPoints');
+            const noiseLevel = document.getElementById('noiseLevel');
+            const animationSpeedControl = document.getElementById('animationSpeed');
+            const pointsValue = document.getElementById('pointsValue');
+            const noiseValue = document.getElementById('noiseValue');
+            const speedValue = document.getElementById('speedValue');
+            const randomizeBtn = document.getElementById('randomizeBtn');
+            const updateChart = document.getElementById('updateChart');
+            const dataTable = document.getElementById('dataTable');
+            
+
+            function initialize() {
+                dataPoints.addEventListener('input', updateControlValues);
+                noiseLevel.addEventListener('input', updateControlValues);
+                animationSpeedControl.addEventListener('input', updateControlValues);
+                
+                chartType.addEventListener('change', () => {
+                    currentChartType = chartType.value;
+                    drawChart();
+                });
+                
+                dataPattern.addEventListener('change', generateChartData);
+                randomizeBtn.addEventListener('click', randomizeData);
+                updateChart.addEventListener('click', generateChartData);
+                
+
+                generateChartData();
+                
+
+                resizeChartCanvas();
+                window.addEventListener('resize', resizeChartCanvas);
+            }
+            
+            function resizeChartCanvas() {
+                chartCanvas.width = chartCanvas.offsetWidth;
+                chartCanvas.height = chartCanvas.offsetHeight;
+                drawChart();
+            }
+            
+            function updateControlValues() {
+                pointsValue.textContent = dataPoints.value;
+                noiseValue.textContent = noiseLevel.value;
+                speedValue.textContent = animationSpeedControl.value;
+                animationSpeed = parseFloat(animationSpeedControl.value);
+            }
+            
+            function generateLabels(count) {
+                const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                if (count <= 12) {
+                    return months.slice(0, count);
+                }
+                return Array.from({length: count}, (_, i) => `Dato ${i+1}`);
+            }
+            
+            function generateChartData() {
+                const count = parseInt(dataPoints.value);
+                const noise = parseInt(noiseLevel.value) / 100;
+                const pattern = dataPattern.value;
+                
+                chartData.labels = generateLabels(count);
+                chartData.values = [];
+                
+                for (let i = 0; i < count; i++) {
+                    let value;
+                    const progress = i / (count - 1);
+                    
+                    switch(pattern) {
+                        case 'random':
+                            value = 20 + Math.random() * 60;
+                            break;
+                        case 'ascendente':
+                            value = 20 + progress * 60;
+                            break;
+                        case 'descendente':
+                            value = 80 - progress * 60;
+                            break;
+                        case 'sinusoidal':
+                            value = 50 + Math.sin(progress * Math.PI * 4) * 30;
+                            break;
+                    }
+                    
+
+                    value += (Math.random() - 0.5) * 40 * noise;
+                    value = Math.max(5, Math.min(95, value));
+                    
+                    chartData.values.push(Math.round(value));
+                }
+                
+                updateDataTable();
+                drawChart();
+            }
+            
+            function randomizeData() {
+
+                const chartTypes = ['bar', 'line', 'pie'];
+                currentChartType = chartTypes[Math.floor(Math.random() * chartTypes.length)];
+                chartType.value = currentChartType;
+                
+
+                const patterns = ['random', 'ascendente', 'descendente', 'sinusoidal'];
+                dataPattern.value = patterns[Math.floor(Math.random() * patterns.length)];
+                
+                dataPoints.value = 5 + Math.floor(Math.random() * 20);
+                noiseLevel.value = Math.floor(Math.random() * 100);
+                animationSpeedControl.value = [0.5, 1, 1.5, 2, 2.5, 3][Math.floor(Math.random() * 6)];
+                
+                updateControlValues();
+                generateChartData();
+            }
+            
+            function updateDataTable() {
+                let tableHTML = '';
+                const showItems = Math.min(10, chartData.labels.length);
+                
+                for (let i = 0; i < showItems; i++) {
+                    tableHTML += `
+                        <tr>
+                            <td>${chartData.labels[i]}</td>
+                            <td>${chartData.values[i]}</td>
+                        </tr>
+                    `;
+                }
+                
+                if (chartData.labels.length > showItems) {
+                    tableHTML += `
+                        <tr>
+                            <td colspan="2" class="text-center small text-muted">+${chartData.labels.length - showItems} más...</td>
+                        </tr>
+                    `;
+                }
+                
+                dataTable.innerHTML = tableHTML;
+            }
+            
+            function drawChart() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                
+                chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                
+                switch(currentChartType) {
+                    case 'bar':
+                        drawBarChart();
+                        break;
+                    case 'line':
+                        drawLineChart();
+                        break;
+                    case 'pie':
+                        drawPieChart();
+                        break;
+                }
+            }
+            
+            function drawBarChart() {
+                const margin = 40;
+                const chartWidth = chartCanvas.width - 2 * margin;
+                const chartHeight = chartCanvas.height - 2 * margin;
+                
+
+                drawAxes(margin, chartWidth, chartHeight);
+                
+                if (chartData.labels.length === 0) return;
+                
+                const barWidth = chartWidth / chartData.labels.length * 0.7;
+                const gap = chartWidth / chartData.labels.length * 0.3;
+                
+ 
+                const animationStart = Date.now();
+                const animationDuration = 1000 / animationSpeed;
+                
+                function animate() {
+                    const elapsed = Date.now() - animationStart;
+                    const progress = Math.min(elapsed / animationDuration, 1);
+                    
+                    chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                    drawAxes(margin, chartWidth, chartHeight);
+                    
+                    for (let i = 0; i < chartData.labels.length; i++) {
+                        const x = margin + i * (barWidth + gap) + gap/2;
+                        const barHeight = (chartData.values[i] / 100) * chartHeight * progress;
+                        const y = margin + chartHeight - barHeight;
+                        
+
+                        const gradient = chartCtx.createLinearGradient(x, y, x, y + barHeight);
+                        gradient.addColorStop(0, chartData.colors[i % chartData.colors.length]);
+                        gradient.addColorStop(1, darkenColor(chartData.colors[i % chartData.colors.length], 20));
+                        
+                        chartCtx.fillStyle = gradient;
+                        chartCtx.beginPath();
+                        chartCtx.roundRect(x, y, barWidth, barHeight, [5, 5, 0, 0]);
+                        chartCtx.fill();
+                        
+                        if (barHeight > 30) {
+                            chartCtx.fillStyle = '#fff';
+                            chartCtx.font = '12px Arial';
+                            chartCtx.textAlign = 'center';
+                            chartCtx.fillText(chartData.values[i], x + barWidth/2, y + 20);
+                        }
+                        
+
+                        chartCtx.fillStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                        chartCtx.font = '12px Arial';
+                        chartCtx.textAlign = 'center';
+                        chartCtx.fillText(chartData.labels[i], x + barWidth/2, margin + chartHeight + 20);
+                    }
+                    
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    }
+                }
+                
+                animate();
+            }
+            
+            function drawLineChart() {
+                const margin = 40;
+                const chartWidth = chartCanvas.width - 2 * margin;
+                const chartHeight = chartCanvas.height - 2 * margin;
+                
+
+                drawAxes(margin, chartWidth, chartHeight);
+                
+                if (chartData.labels.length === 0) return;
+                
+                const step = chartWidth / (chartData.labels.length - 1);
+                const points = [];
+                
+                for (let i = 0; i < chartData.labels.length; i++) {
+                    const x = margin + i * step;
+                    const y = margin + chartHeight - (chartData.values[i] / 100 * chartHeight);
+                    points.push({x, y});
+                    
+
+                    chartCtx.fillStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                    chartCtx.font = '12px Arial';
+                    chartCtx.textAlign = 'center';
+                    chartCtx.fillText(chartData.labels[i], x, margin + chartHeight + 20);
+                }
+                
+
+                const animationStart = Date.now();
+                const animationDuration = 1000 / animationSpeed;
+                
+                function animate() {
+                    const elapsed = Date.now() - animationStart;
+                    const progress = Math.min(elapsed / animationDuration, 1);
+                    const visiblePoints = Math.max(2, Math.ceil(points.length * progress));
+                    
+                    chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                    drawAxes(margin, chartWidth, chartHeight);
+                    
+
+                    chartCtx.strokeStyle = 'rgba(78, 84, 200, 0.7)';
+                    chartCtx.lineWidth = 3;
+                    chartCtx.beginPath();
+                    chartCtx.moveTo(points[0].x, points[0].y);
+                    
+                    for (let i = 1; i < visiblePoints; i++) {
+
+                        const cpX = (points[i].x + points[i-1].x) / 2;
+                        const cpY1 = points[i-1].y;
+                        const cpY2 = points[i].y;
+                        
+                        chartCtx.bezierCurveTo(cpX, cpY1, cpX, cpY2, points[i].x, points[i].y);
+                    }
+                    
+                    chartCtx.stroke();
+                    
+
+                    if (visiblePoints > 1) {
+                        const gradient = chartCtx.createLinearGradient(0, margin, 0, margin + chartHeight);
+                        gradient.addColorStop(0, 'rgba(78, 84, 200, 0.3)');
+                        gradient.addColorStop(1, 'rgba(78, 84, 200, 0)');
+                        
+                        chartCtx.fillStyle = gradient;
+                        chartCtx.lineTo(points[visiblePoints-1].x, margin + chartHeight);
+                        chartCtx.lineTo(points[0].x, margin + chartHeight);
+                        chartCtx.closePath();
+                        chartCtx.fill();
+                    }
+                    
+
+                    for (let i = 0; i < visiblePoints; i++) {
+                        const point = points[i];
+                        
+                        chartCtx.fillStyle = chartData.colors[i % chartData.colors.length];
+                        chartCtx.beginPath();
+                        chartCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                        chartCtx.fill();
+                        chartCtx.strokeStyle = '#fff';
+                        chartCtx.lineWidth = 2;
+                        chartCtx.stroke();
+                        
+ 
+                        chartCtx.fillStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                        chartCtx.font = 'bold 12px Arial';
+                        chartCtx.textAlign = 'center';
+                        chartCtx.fillText(chartData.values[i], point.x, point.y - 15);
+                    }
+                    
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    }
+                }
+                
+                animate();
+            }
+            
+            function drawPieChart() {
+                const centerX = chartCanvas.width / 2;
+                const centerY = chartCanvas.height / 2;
+                const radius = Math.min(chartCanvas.width, chartCanvas.height) * 0.35;
+                const total = chartData.values.reduce((sum, val) => sum + val, 0);
+                
+                if (total === 0) return;
+                
+        
+                const animationStart = Date.now();
+                const animationDuration = 1500 / animationSpeed;
+                
+                function animate() {
+                    const elapsed = Date.now() - animationStart;
+                    const progress = Math.min(elapsed / animationDuration, 1);
+                    
+                    chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                    
+                    let startAngle = 0;
+                    let cumulativeValue = 0;
+                    
+                    for (let i = 0; i < chartData.values.length; i++) {
+                        const sliceAngle = (chartData.values[i] / total) * 2 * Math.PI * progress;
+                        const midAngle = startAngle + sliceAngle / 2;
+                        
+    
+                        chartCtx.beginPath();
+                        chartCtx.fillStyle = chartData.colors[i % chartData.colors.length];
+                        chartCtx.moveTo(centerX, centerY);
+                        chartCtx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                        chartCtx.closePath();
+                        chartCtx.fill();
+                        
+       
+                        chartCtx.strokeStyle = '#fff';
+                        chartCtx.lineWidth = 2;
+                        chartCtx.stroke();
+                        
+          
+                        if (sliceAngle > 0.2) {
+                            const textX = centerX + Math.cos(midAngle) * (radius * 0.7);
+                            const textY = centerY + Math.sin(midAngle) * (radius * 0.7);
+                            
+                            chartCtx.fillStyle = '#fff';
+                            chartCtx.font = 'bold 12px Arial';
+                            chartCtx.textAlign = 'center';
+                            chartCtx.textBaseline = 'middle';
+                            chartCtx.fillText(`${Math.round((chartData.values[i] / total) * 100)}%`, textX, textY);
+                        }
+                        
+                        startAngle += sliceAngle;
+                        cumulativeValue += chartData.values[i];
+                    }
+                    
+
+                    const legendX = centerX + radius + 30;
+                    let legendY = centerY - radius + 20;
+                    
+                    for (let i = 0; i < chartData.labels.length; i++) {
+                        chartCtx.fillStyle = chartData.colors[i % chartData.colors.length];
+                        chartCtx.beginPath();
+                        chartCtx.rect(legendX, legendY - 10, 15, 15);
+                        chartCtx.fill();
+                        
+                        chartCtx.fillStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                        chartCtx.font = '12px Arial';
+                        chartCtx.textAlign = 'left';
+                        chartCtx.fillText(chartData.labels[i], legendX + 20, legendY);
+                        
+                        legendY += 25;
+                    }
+                    
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    }
+                }
+                
+                animate();
+            }
+            
+            function drawAxes(margin, chartWidth, chartHeight) {
+                chartCtx.strokeStyle = html.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+                chartCtx.lineWidth = 1;
+                
+       
+                const verticalSteps = 10;
+                for (let i = 0; i <= verticalSteps; i++) {
+                    const x = margin + i * chartWidth / verticalSteps;
+                    chartCtx.beginPath();
+                    chartCtx.moveTo(x, margin);
+                    chartCtx.lineTo(x, margin + chartHeight);
+                    chartCtx.stroke();
+                }
+                
+       
+                const horizontalSteps = 10;
+                for (let i = 0; i <= horizontalSteps; i++) {
+                    const y = margin + i * chartHeight / horizontalSteps;
+                    chartCtx.beginPath();
+                    chartCtx.moveTo(margin, y);
+                    chartCtx.lineTo(margin + chartWidth, y);
+                    chartCtx.stroke();
+                }
+                
+     
+                chartCtx.strokeStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                chartCtx.lineWidth = 2;
+                
+    
+                chartCtx.beginPath();
+                chartCtx.moveTo(margin, margin + chartHeight);
+                chartCtx.lineTo(margin + chartWidth, margin + chartHeight);
+                chartCtx.stroke();
+                
+
+                chartCtx.beginPath();
+                chartCtx.moveTo(margin, margin);
+                chartCtx.lineTo(margin, margin + chartHeight);
+                chartCtx.stroke();
+                
+
+                chartCtx.fillStyle = html.getAttribute('data-bs-theme') === 'dark' ? '#eee' : '#666';
+                chartCtx.font = '12px Arial';
+                chartCtx.textAlign = 'right';
+                chartCtx.textBaseline = 'middle';
+                
+                for (let i = 0; i <= 5; i++) {
+                    const y = margin + chartHeight - i * chartHeight / 5;
+                    chartCtx.fillText(`${i * 20}%`, margin - 10, y);
+                }
+            }
+            
+            function darkenColor(color, percent) {
+                const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                if (!rgba) return color;
+                
+                const r = Math.max(0, parseInt(rgba[1]) - percent);
+                const g = Math.max(0, parseInt(rgba[2]) - percent);
+                const b = Math.max(0, parseInt(rgba[3]) - percent);
+                const a = rgba[4] ? parseFloat(rgba[4]) : 1;
+                
+                return `rgba(${r}, ${g}, ${b}, ${a})`;
+            }
+            
+
+            document.getElementById('contactForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('¡Gracias por tu mensaje! Esta es una demostración, el formulario no envía datos reales.');
+                e.target.reset();
+            });
+            
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
